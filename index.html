@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>비타민 퀴즈 | 기술·가정</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #23272e;
+      --muted: #5c6570;
+      --line: #e2e6eb;
+      --bg: #f7f6f2;
+      --card: #ffffff;
+      --accent: #d9661f;
+      --accent-dark: #b4501a;
+      --accent-soft: #fdf0e6;
+      --green: #1f7a4d;
+      --green-soft: #e6f3ec;
+      --red: #b3261e;
+      --red-soft: #fbeceb;
+      --amber: #8f6107;
+      --amber-soft: #faf3df;
+    }
+    * { box-sizing: border-box }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font-family: "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+      line-height: 1.6; font-size: 16px;
+    }
+    .wrap { max-width: 640px; margin: 0 auto; padding: 28px 18px 60px }
+    header h1 { font-size: 26px; font-weight: 900; margin: 0; letter-spacing: -.5px }
+    header p { margin: 4px 0 0; color: var(--muted) }
+
+    .tabs { display: flex; gap: 6px; margin: 22px 0 14px; background: #ebe8e1; padding: 5px; border-radius: 12px }
+    .tab {
+      flex: 1; border: 0; background: transparent; padding: 10px; border-radius: 9px;
+      font: inherit; font-weight: 700; color: var(--muted); cursor: pointer;
+    }
+    .tab[aria-selected="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.08) }
+
+    .card { background: var(--card); border-radius: 16px; padding: 22px; box-shadow: 0 1px 3px rgba(0,0,0,.06) }
+    .field { margin-bottom: 24px }
+    .field > label, .field > .label { display: block; font-weight: 700; margin-bottom: 8px }
+    .hint { font-size: 13.5px; color: var(--muted); font-weight: 400 }
+
+    input[type="text"] {
+      width: 100%; font: inherit; padding: 11px 13px; border: 1.5px solid var(--line);
+      border-radius: 10px; background: #fff; color: var(--ink);
+    }
+    input[type="text"]:focus { outline: none; border-color: var(--accent) }
+
+    .count-view { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px }
+    .count-view b { font-size: 30px; font-weight: 900; color: var(--accent) }
+    input[type="range"] { width: 100%; accent-color: var(--accent); height: 28px; cursor: pointer }
+    .ticks { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--muted) }
+
+    .btn {
+      border: 0; border-radius: 12px; padding: 13px 18px; font: inherit; font-weight: 700;
+      cursor: pointer; background: var(--accent); color: #fff; width: 100%;
+    }
+    .btn:hover:not(:disabled) { background: var(--accent-dark) }
+    .btn:disabled { opacity: .45; cursor: not-allowed }
+    .btn.ghost { background: #fff; color: var(--ink); border: 1.5px solid var(--line); width: auto }
+    .btn.ghost:hover { background: #faf9f6 }
+    .btn.small { padding: 7px 12px; font-size: 14px; width: auto }
+
+    .tip { background: var(--accent-soft); border-radius: 12px; padding: 12px 14px; font-size: 14.5px; margin-bottom: 20px }
+
+    /* 문제 화면 */
+    .progress-row { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); margin-bottom: 6px }
+    .progress { height: 8px; background: #efece6; border-radius: 4px; overflow: hidden; margin-bottom: 20px }
+    .progress i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .3s }
+    .q-tag { display: inline-block; font-size: 13px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 2px 8px; margin-bottom: 8px }
+    .q-text { font-size: 19px; font-weight: 700; margin: 0 0 16px; line-height: 1.5 }
+    .options { display: grid; gap: 9px }
+    .opt {
+      text-align: left; border: 1.5px solid var(--line); background: #fff; border-radius: 12px;
+      padding: 12px 14px; font: inherit; cursor: pointer; display: flex; gap: 10px; align-items: center;
+      transition: border-color .12s, background .12s;
+    }
+    .opt:hover:not(:disabled) { border-color: var(--accent) }
+    .opt .k { flex: 0 0 26px; height: 26px; border-radius: 50%; background: #f1efe9; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px }
+    .opt:disabled { cursor: default }
+    .opt.right { border-color: var(--green); background: var(--green-soft) }
+    .opt.right .k { background: var(--green); color: #fff }
+    .opt.wrong { border-color: var(--red); background: var(--red-soft) }
+    .opt.wrong .k { background: var(--red); color: #fff }
+    .feedback { border-radius: 12px; padding: 12px 14px; margin: 16px 0 14px; font-size: 15px }
+    .feedback.ok { background: var(--green-soft) }
+    .feedback.no { background: var(--red-soft) }
+    .feedback strong { display: block; margin-bottom: 2px }
+
+    /* 결과 화면 */
+    .result { text-align: center; padding: 8px 0 4px }
+    .result .big { font-size: 60px; animation: bounce .6s ease }
+    .result .score { font-size: 40px; font-weight: 900; margin: 4px 0 }
+    .result .score small { font-size: 20px; color: var(--muted); font-weight: 700 }
+    @keyframes bounce { 0% { transform: scale(.3) } 60% { transform: scale(1.15) } 100% { transform: scale(1) } }
+    .review { text-align: left; margin-top: 18px }
+    .review h3 { font-size: 16px; margin: 0 0 8px }
+    .review li { margin: 8px 0; font-size: 15px }
+    .review li .a { color: var(--green); font-weight: 700 }
+    .save { font-size: 14px; color: var(--muted); margin: 10px 0 0 }
+    .save.err { color: var(--red) }
+    .btn-row { display: flex; gap: 8px; justify-content: center; margin-top: 18px }
+
+    .msg { border-radius: 10px; padding: 11px 14px; margin-top: 14px; font-size: 15px }
+    .msg.err { background: var(--red-soft); color: var(--red) }
+    .msg.warn { background: var(--amber-soft); color: var(--amber) }
+
+    /* 교사 화면 */
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap }
+    .who { font-size: 14px; color: var(--muted) }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 18px 0 }
+    .stat { background: var(--bg); border-radius: 12px; padding: 12px; text-align: center }
+    .stat b { display: block; font-size: 26px; font-weight: 900 }
+    .stat span { font-size: 13px; color: var(--muted) }
+    h3 { font-size: 16px; margin: 22px 0 6px }
+    .sub { font-size: 13.5px; color: var(--muted); margin: 0 0 10px }
+    .bar-row { display: grid; grid-template-columns: 1fr 110px 44px; align-items: center; gap: 10px; margin: 7px 0; font-size: 14px }
+    .bar { height: 12px; background: #efece6; border-radius: 6px; overflow: hidden }
+    .bar i { display: block; height: 100%; border-radius: 6px; transition: width .4s }
+    .bar-row .n { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums }
+    .list { list-style: none; padding: 0; margin: 0 }
+    .list li { border-top: 1px solid var(--line); padding: 10px 0; display: flex; gap: 10px; align-items: center }
+    .list .body { flex: 1; min-width: 0 }
+    .list .meta { font-size: 13px; color: var(--muted) }
+    .pill { font-weight: 900; font-size: 15px; min-width: 56px; text-align: right; font-variant-numeric: tabular-nums }
+    .del { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 0 4px; font-family: inherit }
+    .del:hover { color: var(--red) }
+    .empty { color: var(--muted); justify-content: center }
+
+    .demo-banner { background: var(--amber-soft); color: var(--amber); border-radius: 10px; padding: 10px 14px; font-size: 14px; margin-top: 14px }
+    footer { margin-top: 30px; text-align: center; font-size: 13px; color: var(--muted) }
+    [hidden] { display: none !important }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>🍊 비타민 퀴즈</h1>
+      <p>기술·가정 | 청소년의 영양 — 비타민의 종류와 기능, 결핍증, 급원 식품</p>
+      <div id="demoBanner" class="demo-banner" hidden>
+        <strong>미리보기(데모) 모드</strong> · 파이어베이스 설정값을 아직 넣지 않아 결과가 이 브라우저에만 임시 저장됩니다.
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tabStudent" aria-selected="true">퀴즈 풀기</button>
+      <button class="tab" role="tab" id="tabTeacher" aria-selected="false">교사 화면</button>
+    </nav>
+
+    <!-- ===== 학생: 시작 ===== -->
+    <section id="startView" class="card">
+      <div class="tip">💡 문제를 풀면 바로 정답과 해설이 나와요. 끝까지 풀면 점수가 선생님께 전달됩니다.</div>
+      <div class="field">
+        <label for="name">학번과 이름</label>
+        <input type="text" id="name" maxlength="20" placeholder="예: 20312 김하늘" autocomplete="off">
+      </div>
+      <div class="field">
+        <span class="label">몇 문제 풀까요? <span class="hint">(슬라이더로 정하세요)</span></span>
+        <div class="count-view"><b id="countNum">10</b><span>문제</span><span class="hint" id="countHint">· 약 4분</span></div>
+        <input type="range" id="count" min="5" max="15" step="1" value="10" aria-label="문제 수">
+        <div class="ticks"><span>5</span><span>10</span><span>15</span></div>
+      </div>
+      <button class="btn" id="startBtn" disabled>퀴즈 시작</button>
+    </section>
+
+    <!-- ===== 학생: 문제 ===== -->
+    <section id="quizView" class="card" hidden>
+      <div class="progress-row"><span id="pText">1 / 10</span><span>맞힌 문제 <b id="pScore">0</b></span></div>
+      <div class="progress"><i id="pBar"></i></div>
+      <span class="q-tag" id="qTag"></span>
+      <p class="q-text" id="qText"></p>
+      <div class="options" id="options"></div>
+      <div id="feedback" class="feedback" hidden></div>
+      <button class="btn" id="nextBtn" hidden>다음 문제</button>
+    </section>
+
+    <!-- ===== 학생: 결과 ===== -->
+    <section id="resultView" class="card" hidden>
+      <div class="result">
+        <div class="big" id="rEmoji">🎉</div>
+        <div class="score"><span id="rScore">0</span><small> / <span id="rTotal">0</span></small></div>
+        <div id="rMsg"></div>
+        <p class="save" id="saveMsg">결과 저장 중…</p>
+      </div>
+      <div class="review" id="review" hidden>
+        <h3>📝 틀린 문제 다시 보기</h3>
+        <ol id="reviewList"></ol>
+      </div>
+      <div class="btn-row">
+        <button class="btn ghost" id="retryBtn">다시 풀기</button>
+      </div>
+    </section>
+
+    <!-- ===== 교사 ===== -->
+    <section id="teacherView" class="card" hidden>
+      <div id="loginBox">
+        <p style="margin-top:0">퀴즈 결과는 <strong>지정된 교사 계정</strong>으로 로그인해야만 볼 수 있습니다.</p>
+        <button class="btn" id="loginBtn">Google 계정으로 로그인</button>
+        <div id="authMsg" class="msg err" hidden></div>
+      </div>
+
+      <div id="dash" hidden>
+        <div class="row">
+          <span class="who" id="who"></span>
+          <button class="btn ghost small" id="logoutBtn">로그아웃</button>
+        </div>
+        <div class="stats">
+          <div class="stat"><b id="sTotal">0</b><span>응시 수</span></div>
+          <div class="stat"><b id="sAvg">-</b><span>평균 정답률</span></div>
+          <div class="stat"><b id="sPerfect">0</b><span>만점</span></div>
+        </div>
+        <h3>문항별 정답률</h3>
+        <p class="sub">정답률이 낮은 문항부터 보여 줍니다. 다음 수업에서 다시 짚어 줄 내용이에요.</p>
+        <div id="itemBars"></div>
+        <h3>응시 기록</h3>
+        <ul class="list" id="list"></ul>
+      </div>
+
+      <div id="denied" hidden>
+        <div class="msg warn" style="margin-top:0">
+          <strong id="deniedWho"></strong> 계정은 결과를 볼 권한이 없습니다.<br>
+          데이터베이스 보안 규칙에 등록된 교사 계정으로 다시 로그인해 주세요.
+        </div>
+        <button class="btn ghost small" id="logoutBtn2" style="margin-top:12px">다른 계정으로 로그인</button>
+      </div>
+    </section>
+
+    <footer>기술·가정 · 교육용 AI 프로그래밍 과제</footer>
+  </div>
+
+  <script type="module">
+    /* =========================================================
+       ① 파이어베이스 콘솔 > 프로젝트 설정 > 내 앱(웹) 에서 복사한 값으로 바꾸세요.
+       ② TEACHER_EMAIL 은 firestore.rules 에 적은 이메일과 똑같아야 합니다.
+       ========================================================= */
+    const firebaseConfig = {
+      apiKey: "여기에_API_KEY",
+      authDomain: "여기에_PROJECT_ID.firebaseapp.com",
+      projectId: "여기에_PROJECT_ID",
+      storageBucket: "여기에_PROJECT_ID.firebasestorage.app",
+      messagingSenderId: "여기에_SENDER_ID",
+      appId: "여기에_APP_ID"
+    };
+    const TEACHER_EMAIL = "teacher@gmail.com";
+    /* ========================================================= */
+
+    /* ---------- 문제 은행: 첫 번째 보기가 정답 (화면에서는 섞어서 보여 줌) ---------- */
+    const BANK = [
+      { id: "q01", tag: "결핍증", q: "어두운 곳에서 잘 보이지 않는 '야맹증'은 어떤 비타민이 부족할 때 생길까요?",
+        o: ["비타민 A", "비타민 C", "비타민 D", "비타민 K"],
+        e: "비타민 A는 눈의 망막에서 빛을 감지하는 물질을 만드는 데 필요해요. 부족하면 야맹증이 생깁니다." },
+      { id: "q02", tag: "결핍증", q: "옛날 흰쌀밥만 먹던 사람들에게 많았던 '각기병'은 어떤 비타민 결핍증일까요?",
+        o: ["비타민 B1(티아민)", "비타민 B12", "비타민 E", "비타민 A"],
+        e: "비타민 B1은 탄수화물이 에너지로 바뀌는 과정을 돕습니다. 도정한 흰쌀에는 B1이 적어 각기병이 생겼어요." },
+      { id: "q03", tag: "결핍증", q: "잇몸에서 피가 나고 상처가 잘 낫지 않는 '괴혈병'은 어떤 비타민이 부족해서 생길까요?",
+        o: ["비타민 C", "비타민 B2", "비타민 D", "비타민 K"],
+        e: "비타민 C는 피부·잇몸·혈관을 튼튼하게 하는 콜라겐을 만드는 데 필요합니다. 오랜 항해를 하던 선원들에게 괴혈병이 많았어요." },
+      { id: "q04", tag: "결핍증", q: "뼈가 약해지고 휘는 '구루병'과 가장 관계 깊은 비타민은?",
+        o: ["비타민 D", "비타민 C", "비타민 B1", "비타민 A"],
+        e: "비타민 D는 칼슘이 몸에 잘 흡수되도록 도와 뼈를 튼튼하게 해요. 부족하면 어린이는 구루병, 어른은 골연화증이 생길 수 있습니다." },
+      { id: "q05", tag: "기능", q: "햇볕을 쬐면 피부에서 만들어지는 비타민은 무엇일까요?",
+        o: ["비타민 D", "비타민 C", "비타민 E", "비타민 B12"],
+        e: "피부가 햇빛의 자외선을 받으면 비타민 D가 만들어져요. 하루 중 적당한 야외 활동이 도움이 됩니다." },
+      { id: "q06", tag: "기능", q: "상처가 났을 때 피가 잘 멈추도록(혈액 응고) 돕는 비타민은?",
+        o: ["비타민 K", "비타민 A", "비타민 B2", "비타민 C"],
+        e: "비타민 K는 혈액 응고에 꼭 필요합니다. 녹색 잎채소에 많고, 장내 세균이 만들기도 해요." },
+      { id: "q07", tag: "분류", q: "다음 중 '지용성' 비타민이 아닌 것은?",
+        o: ["비타민 C", "비타민 A", "비타민 D", "비타민 E"],
+        e: "지용성 비타민은 A, D, E, K 네 가지예요. 비타민 C와 B군은 물에 녹는 수용성 비타민입니다." },
+      { id: "q08", tag: "기능", q: "세포가 손상되는 것을 막는 '항산화 작용'으로 잘 알려진 지용성 비타민은?",
+        o: ["비타민 E", "비타민 K", "비타민 D", "비타민 B1"],
+        e: "비타민 E는 대표적인 항산화 비타민으로 세포막을 보호합니다. 식물성 기름, 견과류에 많아요." },
+      { id: "q09", tag: "결핍증", q: "입술 양쪽 끝이 갈라지고 헐어요(구순구각염). 어떤 비타민이 부족할 가능성이 클까요?",
+        o: ["비타민 B2(리보플라빈)", "비타민 D", "비타민 K", "비타민 A"],
+        e: "비타민 B2가 부족하면 입술·입안·혀에 염증이 잘 생깁니다. 우유, 달걀, 간 등에 많아요." },
+      { id: "q10", tag: "결핍증", q: "피부염·설사·치매 증상이 나타나는 '펠라그라'는 어떤 비타민 결핍증일까요?",
+        o: ["나이아신", "비타민 C", "비타민 E", "비타민 B1"],
+        e: "나이아신(비타민 B3)이 부족하면 펠라그라가 생겨요. 옥수수를 주식으로 하던 지역에서 많이 나타났습니다." },
+      { id: "q11", tag: "결핍증", q: "임신 초기에 특히 충분히 먹어야 하며, 부족하면 빈혈을 일으키는 B군 비타민은?",
+        o: ["엽산", "비타민 B1", "나이아신", "비타민 B2"],
+        e: "엽산은 세포가 새로 만들어질 때 필요해요. 부족하면 빈혈이 생기고, 임신 초기에는 태아의 신경관 발달에 중요합니다." },
+      { id: "q12", tag: "결핍증", q: "동물성 식품에 주로 들어 있고, 부족하면 '악성 빈혈'이 생기는 비타민은?",
+        o: ["비타민 B12", "비타민 C", "비타민 A", "비타민 K"],
+        e: "비타민 B12는 적혈구를 만드는 데 필요하며 고기·생선·달걀·우유 같은 동물성 식품에 주로 들어 있어요." },
+      { id: "q13", tag: "급원 식품", q: "다음 중 비타민 C가 가장 풍부한 식품 묶음은?",
+        o: ["귤, 딸기, 풋고추", "버터, 달걀노른자, 치즈", "흰쌀, 밀가루, 설탕", "돼지고기, 현미, 콩"],
+        e: "신선한 과일과 채소, 특히 귤·딸기·키위·풋고추·브로콜리에 비타민 C가 많습니다." },
+      { id: "q14", tag: "급원 식품", q: "당근, 시금치, 간에 많이 들어 있으며 눈 건강에 좋은 비타민은?",
+        o: ["비타민 A", "비타민 B1", "비타민 C", "비타민 D"],
+        e: "당근 등 녹황색 채소의 카로틴은 몸속에서 비타민 A로 바뀌어요. 간에는 비타민 A가 직접 들어 있습니다." },
+      { id: "q15", tag: "급원 식품", q: "돼지고기와 현미에 특히 많이 들어 있는 비타민은?",
+        o: ["비타민 B1", "비타민 C", "비타민 D", "비타민 K"],
+        e: "비타민 B1은 돼지고기, 현미·보리 같은 잡곡, 콩류에 많아요. 흰쌀보다 현미를 먹으면 B1을 더 얻을 수 있습니다." },
+      { id: "q16", tag: "분류", q: "수용성 비타민에 대한 설명으로 옳은 것은?",
+        o: ["많이 먹어도 남는 양은 소변으로 나가므로 꾸준히 섭취해야 한다",
+            "몸속 지방에 저장되므로 가끔만 먹어도 된다",
+            "기름에 볶아야만 흡수된다",
+            "비타민 A, D, E, K가 해당한다"],
+        e: "수용성 비타민(B군, C)은 물에 녹아 남는 양이 소변으로 배출돼요. 몸에 오래 저장되지 않아 매일 골고루 먹는 것이 좋습니다." },
+      { id: "q17", tag: "조리", q: "당근의 비타민 A(카로틴)를 더 잘 흡수하려면 어떻게 조리하는 것이 좋을까요?",
+        o: ["기름에 살짝 볶는다", "물에 오래 담가 둔다", "아주 오래 삶아서 국물은 버린다", "설탕에 절인다"],
+        e: "비타민 A는 지용성이라 기름과 함께 먹으면 흡수가 잘 됩니다. 당근볶음, 당근전이 좋은 예예요." },
+      { id: "q18", tag: "조리", q: "채소의 비타민 C 손실을 줄이는 조리 방법으로 가장 알맞은 것은?",
+        o: ["먹기 직전에 썰고, 짧게 데친다", "미리 잘게 썰어 물에 오래 담가 둔다", "오래 푹 끓인다", "삶은 물에 소다를 넣는다"],
+        e: "비타민 C는 물에 잘 녹고 열과 공기에 약해요. 씻은 뒤 썰고, 조리는 짧게 하는 것이 좋습니다." },
+      { id: "q19", tag: "분류", q: "영양제로 지용성 비타민을 너무 많이 먹으면 생길 수 있는 문제는?",
+        o: ["몸속에 쌓여 과잉증이 생길 수 있다", "모두 소변으로 나가 아무 문제 없다", "곧바로 에너지로 바뀌어 살이 찐다", "수용성 비타민으로 바뀐다"],
+        e: "지용성 비타민은 몸의 지방과 간에 저장되기 때문에 지나치게 먹으면 쌓여서 과잉증이 나타날 수 있어요. 음식으로 골고루 먹는 것이 가장 좋습니다." },
+      { id: "q20", tag: "기능", q: "비타민의 특징으로 옳은 것은?",
+        o: ["적은 양으로 몸의 여러 기능을 조절한다", "탄수화물처럼 많은 에너지를 낸다", "근육을 만드는 주재료이다", "몸에서 필요한 만큼 모두 만들어진다"],
+        e: "비타민은 에너지를 내지는 않지만 아주 적은 양으로 몸의 생리 기능을 조절하는 '조절소'예요. 대부분 몸에서 만들 수 없어 음식으로 먹어야 합니다." }
+    ];
+    const SHORT = {
+      q01: "야맹증 → 비타민 A", q02: "각기병 → 비타민 B1", q03: "괴혈병 → 비타민 C", q04: "구루병 → 비타민 D",
+      q05: "햇빛으로 합성 → 비타민 D", q06: "혈액 응고 → 비타민 K", q07: "지용성 비타민 구분", q08: "항산화 → 비타민 E",
+      q09: "구순구각염 → 비타민 B2", q10: "펠라그라 → 나이아신", q11: "엽산과 빈혈·임신", q12: "악성 빈혈 → 비타민 B12",
+      q13: "비타민 C 급원 식품", q14: "비타민 A 급원 식품", q15: "비타민 B1 급원 식품", q16: "수용성 비타민의 특징",
+      q17: "지용성 흡수 높이는 조리", q18: "비타민 C 손실 줄이는 조리", q19: "지용성 과잉 섭취", q20: "비타민의 특징(조절소)"
+    };
+    const Q = Object.fromEntries(BANK.map((b) => [b.id, b]));
+
+    const DEMO = firebaseConfig.apiKey.startsWith("여기에");
+    const $ = (id) => document.getElementById(id);
+    const shuffle = (a) => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+    /* ---------- 저장소: 파이어베이스 또는 데모(브라우저 임시 저장) ---------- */
+    let store;
+    if (DEMO) {
+      $("demoBanner").hidden = false;
+      const KEY = "vitamin-quiz-demo";
+      const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || "[]") } catch { return [] } };
+      const write = (a) => { try { localStorage.setItem(KEY, JSON.stringify(a)) } catch {} };
+      let listener = null, authCb = null, user = null;
+      store = {
+        async add(d) { const a = read(); a.push({ id: String(Date.now()), ...d, createdAt: Date.now() }); write(a); listener && listener(read()); },
+        async remove(id) { write(read().filter((x) => x.id !== id)); listener && listener(read()); },
+        watch(cb) { listener = (a) => cb([...a].sort((x, y) => y.createdAt - x.createdAt)); listener(read()); return () => (listener = null); },
+        onAuth(cb) { authCb = cb; cb(user); },
+        async login() { user = { email: TEACHER_EMAIL, displayName: "데모 교사" }; authCb(user); },
+        async logout() { user = null; authCb(null); }
+      };
+    } else {
+      const V = "10.12.2";
+      const { initializeApp } = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-app.js`);
+      const fs = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-firestore.js`);
+      const au = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-auth.js`);
+      const app = initializeApp(firebaseConfig);
+      const db = fs.getFirestore(app);
+      const auth = au.getAuth(app);
+      const col = fs.collection(db, "results");
+      store = {
+        add: (d) => fs.addDoc(col, { ...d, createdAt: fs.serverTimestamp() }),
+        remove: (id) => fs.deleteDoc(fs.doc(db, "results", id)),
+        watch(cb, onErr) {
+          const q = fs.query(col, fs.orderBy("createdAt", "desc"), fs.limit(500));
+          return fs.onSnapshot(q, (snap) => cb(snap.docs.map((d) => {
+            const v = d.data();
+            return { id: d.id, ...v, createdAt: v.createdAt ? v.createdAt.toMillis() : Date.now() };
+          })), onErr);
+        },
+        onAuth: (cb) => au.onAuthStateChanged(auth, cb),
+        login: () => au.signInWithPopup(auth, new au.GoogleAuthProvider()),
+        logout: () => au.signOut(auth)
+      };
+    }
+
+    /* ---------- 화면 전환 ---------- */
+    const views = ["startView", "quizView", "resultView", "teacherView"];
+    let studentView = "startView";
+    function show(v) { views.forEach((x) => ($(x).hidden = x !== v)); }
+    function showTab(t) {
+      $("tabStudent").setAttribute("aria-selected", t === "s");
+      $("tabTeacher").setAttribute("aria-selected", t === "t");
+      show(t === "s" ? studentView : "teacherView");
+    }
+    $("tabStudent").onclick = () => showTab("s");
+    $("tabTeacher").onclick = () => showTab("t");
+    function goStudent(v) { studentView = v; show(v); }
+
+    /* ---------- 시작 화면: 입력 + 슬라이더 ---------- */
+    function renderCount() {
+      const n = Number($("count").value);
+      $("countNum").textContent = n;
+      $("countHint").textContent = `· 약 ${Math.max(2, Math.round(n * 0.4))}분`;
+    }
+    $("count").addEventListener("input", renderCount);
+    $("name").addEventListener("input", () => { $("startBtn").disabled = !$("name").value.trim(); });
+    $("name").addEventListener("keydown", (e) => { if (e.key === "Enter" && !$("startBtn").disabled) $("startBtn").click(); });
+
+    /* ---------- 퀴즈 진행 ---------- */
+    let quiz = [], idx = 0, score = 0, wrong = [];
+    $("startBtn").onclick = () => {
+      quiz = shuffle(BANK).slice(0, Number($("count").value));
+      idx = 0; score = 0; wrong = [];
+      goStudent("quizView"); renderQuestion();
+    };
+
+    function renderQuestion() {
+      const item = quiz[idx];
+      $("pText").textContent = `${idx + 1} / ${quiz.length}`;
+      $("pScore").textContent = score;
+      $("pBar").style.width = `${(idx / quiz.length) * 100}%`;
+      $("qTag").textContent = item.tag;
+      $("qText").textContent = item.q;
+      $("feedback").hidden = true; $("nextBtn").hidden = true;
+      const answer = item.o[0];
+      $("options").innerHTML = "";
+      shuffle(item.o).forEach((text, i) => {
+        const b = document.createElement("button");
+        b.className = "opt"; b.dataset.correct = text === answer ? "1" : "";
+        b.innerHTML = `<span class="k">${i + 1}</span><span>${esc(text)}</span>`;
+        b.onclick = () => choose(b, item);
+        $("options").appendChild(b);
+      });
+    }
+
+    function choose(btn, item) {
+      const ok = btn.dataset.correct === "1";
+      $("options").querySelectorAll(".opt").forEach((b) => {
+        b.disabled = true;
+        if (b.dataset.correct) b.classList.add("right");
+      });
+      if (ok) score++; else { btn.classList.add("wrong"); wrong.push(item.id); }
+      $("pScore").textContent = score;
+      const fb = $("feedback");
+      fb.className = "feedback " + (ok ? "ok" : "no");
+      fb.innerHTML = `<strong>${ok ? "⭕ 정답!" : "❌ 아쉬워요. 정답은 " + esc(item.o[0])}</strong>${esc(item.e)}`;
+      fb.hidden = false;
+      $("nextBtn").textContent = idx === quiz.length - 1 ? "결과 보기" : "다음 문제";
+      $("nextBtn").hidden = false; $("nextBtn").focus();
+    }
+
+    $("nextBtn").onclick = () => {
+      idx++;
+      if (idx < quiz.length) renderQuestion(); else finish();
+    };
+
+    async function finish() {
+      const total = quiz.length, pct = score / total;
+      $("pBar").style.width = "100%";
+      $("rScore").textContent = score; $("rTotal").textContent = total;
+      $("rEmoji").textContent = pct === 1 ? "🏆" : pct >= .8 ? "🎉" : pct >= .5 ? "👍" : "💪";
+      $("rMsg").textContent = pct === 1 ? "만점! 비타민 박사네요." : pct >= .8 ? "아주 잘했어요!" : pct >= .5 ? "좋아요. 틀린 문제만 다시 보면 완벽해요." : "괜찮아요. 해설을 읽고 다시 도전해 봐요!";
+      $("review").hidden = wrong.length === 0;
+      $("reviewList").innerHTML = wrong.map((id) => `<li>${esc(Q[id].q)}<br><span class="a">→ ${esc(Q[id].o[0])}</span></li>`).join("");
+      goStudent("resultView");
+
+      $("saveMsg").className = "save"; $("saveMsg").textContent = "결과 저장 중…";
+      try {
+        await store.add({
+          name: $("name").value.trim().slice(0, 20),
+          score, total,
+          asked: quiz.map((x) => x.id),
+          wrong: [...wrong]
+        });
+        $("saveMsg").textContent = "✅ 결과가 선생님께 전달되었어요.";
+      } catch (e) {
+        console.error(e);
+        $("saveMsg").className = "save err";
+        $("saveMsg").textContent = "결과를 저장하지 못했어요. (" + (e.code || e.message) + ")";
+      }
+    }
+
+    $("retryBtn").onclick = () => { goStudent("startView"); };
+
+    /* ---------- 교사 화면 ---------- */
+    let unwatch = null;
+    function renderDash(items) {
+      const n = items.length;
+      $("sTotal").textContent = n;
+      $("sAvg").textContent = n ? Math.round(items.reduce((s, x) => s + x.score / x.total, 0) / n * 100) + "%" : "-";
+      $("sPerfect").textContent = items.filter((x) => x.score === x.total).length;
+
+      // 문항별 정답률 = (출제 횟수 - 오답 횟수) / 출제 횟수
+      const stat = {};
+      items.forEach((x) => {
+        (x.asked || []).forEach((id) => { (stat[id] ??= { a: 0, w: 0 }).a++; });
+        (x.wrong || []).forEach((id) => { if (stat[id]) stat[id].w++; });
+      });
+      const rows = Object.entries(stat).filter(([id]) => Q[id])
+        .map(([id, s]) => ({ id, rate: (s.a - s.w) / s.a, a: s.a }))
+        .sort((p, q) => p.rate - q.rate);
+      $("itemBars").innerHTML = rows.length ? rows.map((r) => {
+        const pct = Math.round(r.rate * 100);
+        const color = pct < 50 ? "var(--red)" : pct < 80 ? "var(--accent)" : "var(--green)";
+        return `<div class="bar-row" title="${esc(Q[r.id].q)}"><span>${esc(SHORT[r.id])} <span class="hint">· ${r.a}회</span></span>
+          <div class="bar"><i style="width:${pct}%;background:${color}"></i></div><span class="n">${pct}%</span></div>`;
+      }).join("") : `<p class="sub">아직 응시 기록이 없어요.</p>`;
+
+      $("list").innerHTML = n ? items.map((x) => `
+        <li>
+          <div class="body">
+            <strong>${esc(x.name)}</strong>
+            <div class="meta">${new Date(x.createdAt).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}${x.wrong?.length ? " · 틀린 문제: " + x.wrong.map((id) => esc(SHORT[id] || id)).join(", ") : ""}</div>
+          </div>
+          <span class="pill">${x.score}/${x.total}</span>
+          <button class="del" title="삭제" data-id="${esc(x.id)}">×</button>
+        </li>`).join("") : `<li class="empty">아직 응시 기록이 없어요.</li>`;
+      $("list").querySelectorAll(".del").forEach((b) => b.onclick = () => {
+        if (b.dataset.armed) store.remove(b.dataset.id);
+        else { b.dataset.armed = "1"; b.textContent = "삭제?"; setTimeout(() => { delete b.dataset.armed; b.textContent = "×"; }, 2500); }
+      });
+    }
+
+    store.onAuth((user) => {
+      if (unwatch) { unwatch(); unwatch = null; }
+      $("loginBox").hidden = !!user;
+      $("dash").hidden = true; $("denied").hidden = true;
+      if (!user) return;
+      const isTeacher = (user.email || "").toLowerCase() === TEACHER_EMAIL.toLowerCase();
+      if (!isTeacher) { $("deniedWho").textContent = user.email; $("denied").hidden = false; return; }
+      $("who").textContent = `${user.displayName || ""} (${user.email})`;
+      $("dash").hidden = false;
+      unwatch = store.watch(renderDash, (e) => {
+        console.error(e); // 보안 규칙이 읽기를 막으면 여기로 옵니다.
+        $("dash").hidden = true; $("deniedWho").textContent = user.email; $("denied").hidden = false;
+      });
+    });
+
+    $("loginBtn").onclick = async () => {
+      $("authMsg").hidden = true;
+      try { await store.login(); }
+      catch (e) {
+        console.error(e);
+        $("authMsg").textContent = "로그인 실패: " + (e.code || e.message) +
+          (e.code === "auth/unauthorized-domain" ? " → Firebase 인증 > 설정 > 승인된 도메인에 배포 주소를 추가하세요." : "");
+        $("authMsg").hidden = false;
+      }
+    };
+    $("logoutBtn").onclick = () => store.logout();
+    $("logoutBtn2").onclick = () => store.logout();
+  </script>
+</body>
+</html>
